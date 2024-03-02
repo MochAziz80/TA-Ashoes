@@ -6,8 +6,8 @@ const { UserController } = require('../controllers');
 
 
 router.get('/profile/my', authenticationVerifier, UserController.getProfile);
-router.get('/profile/:id', accessLevelVerifier, UserController.get_user);
-router.put('/profile/:id', accessLevelVerifier, UserController.update_user);
+router.put('/profile/pass', authenticationVerifier, UserController.updatePass);
+router.put('/profile', authenticationVerifier, UserController.update_user);
 
 
 // admin

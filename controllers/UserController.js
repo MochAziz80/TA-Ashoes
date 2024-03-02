@@ -74,25 +74,37 @@ const UserController = {
     /* update user */
     async update_user(req, res) {
         try {
-            const userToUpdate = await User.findById(req.params.id);
-
-            if (!userToUpdate) {
+            // Mendapatkan ID pengguna dari token
+            const userId = req.user.id;
+    
+            // Periksa apakah ID pengguna sesuai
+            if (userId !== req.user.id) {
+                return res.status(403).json({
+                    type: 'error',
+                    message: 'You are not allowed to update this user'
+                });
+            }
+    
+            // Hashing password jika ada
+            if (req.body.password) {
+                req.body.password = bcrypt.hashSync(req.body.password, 10);
+            }
+    
+            // Menggunakan findByIdAndUpdate untuk melakukan pembaruan
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                { $set: req.body },
+                { new: true }
+            );
+    
+            // Periksa apakah pengguna ditemukan
+            if (!updatedUser) {
                 return res.status(404).json({
                     type: 'error',
                     message: 'User not found'
                 });
             }
-
-            if (req.body.password) {
-                req.body.password = bcrypt.hashSync(req.body.password, 10);
-            }
-
-            const updatedUser = await User.findByIdAndUpdate(
-                req.params.id,
-                { $set: req.body },
-                { new: true }
-            );
-
+    
             res.status(200).json({
                 type: 'success',
                 message: 'User updated successfully',
@@ -106,6 +118,7 @@ const UserController = {
             });
         }
     },
+    
 
 
     async delete_user(req, res) {
@@ -189,8 +202,9 @@ const UserController = {
 async getProfile(req, res) {
     let userId = req.user.id; // Pastikan mendapatkan userId dari token dengan benar
 
+    console.log(userId)
     try {
-        let user = await User.findOne({ _id: mongoose.Types.ObjectId(userId) }).select('username email');
+        let user = await User.findOne({ _id: mongoose.Types.ObjectId(userId) }).select('firstname lastname username email');
 
         if (!user) {
             return res.status(404).send({
@@ -214,13 +228,51 @@ async getProfile(req, res) {
             message: "Internal Server Error"
         });
     }
+},
+
+async updatePass(req, res) {
+    const userId = req.user.id;
+    const { oldPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(userId); // Sesuaikan dengan metode MongoDB yang sesuai
+
+        if (!user || !bcrypt.compareSync(oldPassword, user.password)) {
+            return res.status(401).json({
+                type: "error",
+                message: "Invalid credentials",
+            });
+        }
+
+        if (newPassword === oldPassword) {
+            return res.status(400).json({
+                type: "error",
+                message: "New password must be different from the old password",
+            });
+        }
+
+        const hashedNewPassword = bcrypt.hashSync(newPassword, 10);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { password: hashedNewPassword },
+            { new: true }
+        );
+
+        res.status(200).json({
+            type: 'success',
+            message: 'The user has been modified successfully!',
+            data: updatedUser
+        });
+    } catch (e) {
+        res.status(500).json({ type: "error", message: "Internal Server Error", errors: e });
+    }
 }
 
     
 
     
 };
-
 
 
 module.exports = UserController;

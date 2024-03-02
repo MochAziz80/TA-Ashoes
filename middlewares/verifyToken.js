@@ -5,8 +5,7 @@ const api_config = require("../config/api.js");
 /* jwt token verify */
 const authenticationVerifier = (req, res, next)=> {
 
-    const authHeader = req.headers.token;
-
+    const authHeader = req.headers.authorization;
     if (authHeader) {
         const token = authHeader.split(' ')[1];
         jwt.verify(token, api_config.api.jwt_secret,(err, user)=>{

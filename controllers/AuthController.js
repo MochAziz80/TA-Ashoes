@@ -34,41 +34,35 @@ const AuthController = {
 
     /* login existing user */
     async login_user(req, res) {
-        const loginIdentifier = req.body.email; // assuming you have a field like this in your request body
-    
-        // Find the user by username or email
-        const user = await User.findOne({
-            $or: [{ username: loginIdentifier }, { email: loginIdentifier }]
-        });
-    
-        console.log(user);
-    
+        
+        const user = await User.findOne({ email: req.body.email });
+
+        console.log(user)
+
         if (!user || !bcrypt.compareSync(req.body.password, user.password)) {
             res.status(500).json({
                 type: "error",
                 message: "User not exists or invalid credentials",
-            });
+            })
         } else {
-            const accessToken = jwt.sign(
-                {
-                    id: user._id,
-                    isAdmin: user.isAdmin,
-                },
-                api_config.api.jwt_secret,
-                { expiresIn: "1d" }
+
+            const accessToken = jwt.sign({
+                id: user._id,
+                isAdmin: user.isAdmin}, 
+            api_config.api.jwt_secret,
+            { expiresIn: "1d"}
             );
-    
+
             const { password, ...data } = user._doc;
-    
+
             res.status(200).json({
                 type: "success",
                 message: "Successfully logged",
                 ...data,
-                accessToken,
-            });
+                accessToken
+            })
         }
     }
-    
 };
 
 module.exports = AuthController;
